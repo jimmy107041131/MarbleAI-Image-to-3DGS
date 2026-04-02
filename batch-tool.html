@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MarbleAI Image to 3DGS Tool</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :root {
+    --bg: #f6f7fb; --bg-card: #fff; --text: #1f2937; --text-heading: #111827;
+    --text-muted: #6b7280; --text-dim: #9ca3af;
+    --border: #e5e7eb; --border-light: #f3f4f6;
+    --input-bg: #fff; --input-border: #d1d5db;
+    --btn-bg: #fff; --btn-hover: #f3f4f6;
+    --tab-bg: #f3f4f6; --tab-hover: #e5e7eb;
+    --dropzone-bg: transparent; --dropzone-border: #d1d5db;
+    --accent: #2563eb; --accent-hover: #1d4ed8;
+    --green: #059669; --green-light: #ecfdf5; --green-border: #a7f3d0;
+    --shadow: rgba(15,23,42,0.05);
+  }
+  [data-theme="dark"] {
+    --bg: #0f1117; --bg-card: #1a1d27; --text: #e2e8f0; --text-heading: #f1f5f9;
+    --text-muted: #94a3b8; --text-dim: #64748b;
+    --border: #2d3348; --border-light: #252a3a;
+    --input-bg: #1e2233; --input-border: #3b4259;
+    --btn-bg: #1e2233; --btn-hover: #252a3a;
+    --tab-bg: #1a1d27; --tab-hover: #252a3a;
+    --dropzone-bg: #1e2233; --dropzone-border: #3b4259;
+    --accent: #3b82f6; --accent-hover: #2563eb;
+    --green: #34d399; --green-light: #1a2e2a; --green-border: #2d6b5a;
+    --shadow: rgba(0,0,0,0.2);
+  }
+
+  body {
+    font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    margin: 0; padding: 2rem 1.5rem 3rem;
+    background: var(--bg); color: var(--text); line-height: 1.5;
+    max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem;
+    transition: background 0.2s, color 0.2s;
+  }
+  h1 { margin: 0 0 0.5rem; color: var(--text-heading); }
+  h1 span { font-size: 0.55em; color: var(--text-muted); font-weight: 400; }
+  h2 { margin: 1.5rem 0 0.75rem; color: var(--text-heading); font-size: 1.1rem; }
+
+  .card {
+    margin: 0.75rem 0; padding: 1rem 1.25rem;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 0.75rem; box-shadow: 0 4px 12px var(--shadow);
+  }
+  .card-row { display: flex; gap: 0.75rem; align-items: center; margin: 0.4rem 0; flex-wrap: wrap; }
+  .card-row label { display: flex; gap: 0.4rem; align-items: center; font-size: 0.9rem; white-space: nowrap; }
+
+  input[type="text"], input[type="password"] {
+    width: 100%; max-width: 28rem; border-radius: 0.5rem;
+    border: 1px solid var(--input-border); padding: 0.5rem 0.75rem;
+    background: var(--input-bg); color: var(--text); font-size: 0.9rem;
+  }
+  select {
+    border-radius: 0.5rem; border: 1px solid var(--input-border);
+    padding: 0.4rem 0.6rem; background: var(--input-bg); color: var(--text); font-size: 0.9rem;
+  }
+  input[type="checkbox"] { accent-color: var(--accent); }
+
+  button {
+    border-radius: 0.5rem; border: 1px solid var(--input-border);
+    background: var(--btn-bg); color: var(--text); cursor: pointer;
+    padding: 0.4rem 0.85rem; font-size: 0.85rem;
+  }
+  button:hover { background: var(--btn-hover); }
+  button:disabled { background: var(--border); color: var(--text-dim); cursor: not-allowed; opacity: 0.7; }
+
+  .btn-primary {
+    display: block; width: 100%; padding: 0.7rem 1rem; font-size: 1rem; font-weight: 600;
+    background: var(--accent); color: #fff; border-color: var(--accent);
+  }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-primary:disabled { background: #93c5fd; border-color: #93c5fd; color: #eff6ff; }
+  .btn-primary:disabled:hover { background: #93c5fd; }
+
+  .btn-green {
+    background: var(--green); color: #fff; border-color: var(--green);
+  }
+  .btn-green:hover { background: #047857; }
+  .btn-green:disabled { background: #6ee7b7; border-color: #6ee7b7; color: #ecfdf5; }
+
+  .btn-sm { padding: 0.3rem 0.65rem; font-size: 0.8rem; }
+
+  /* Drop zone */
+  .dropzone {
+    border: 2px dashed var(--dropzone-border); border-radius: 0.75rem;
+    padding: 2rem; text-align: center; cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    color: var(--text-muted); font-size: 0.95rem; background: var(--dropzone-bg);
+  }
+  .dropzone.dragover { border-color: var(--accent); background: #eff6ff; }
+  .dropzone input[type="file"] { display: none; }
+
+  /* Thumbnails */
+  .thumb-grid {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem;
+  }
+  .thumb-item {
+    position: relative; width: 5rem; height: 5rem;
+    border-radius: 0.5rem; overflow: hidden; border: 1px solid var(--border);
+  }
+  .thumb-item img { width: 100%; height: 100%; object-fit: cover; }
+  .thumb-item .remove {
+    position: absolute; top: 2px; right: 2px; width: 1.2rem; height: 1.2rem;
+    background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 50%;
+    font-size: 0.65rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    padding: 0; line-height: 1;
+  }
+  .thumb-summary { margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.75rem; }
+
+  /* Results */
+  .result-item {
+    padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);
+  }
+  .result-item:last-child { border-bottom: none; }
+  .result-header { display: flex; align-items: center; gap: 0.75rem; }
+  .result-name { font-weight: 600; font-size: 0.9rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .result-status { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; }
+  .result-status.done { color: var(--green); }
+  .result-status.error { color: #dc2626; }
+
+  .result-progress {
+    flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; min-width: 80px;
+  }
+  .result-progress-fill {
+    height: 100%; background: linear-gradient(90deg, #2563eb, #3b82f6);
+    width: 0%; transition: width 0.3s ease; border-radius: 3px;
+  }
+  .result-progress-fill.done { background: linear-gradient(90deg, #059669, #10b981); }
+  .result-progress-fill.error { background: #dc2626; }
+
+  .result-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; align-items: center; }
+  .result-actions a { font-size: 0.8rem; color: var(--accent); text-decoration: none; }
+  .result-actions a:hover { text-decoration: underline; }
+  .result-saved { font-size: 0.8rem; color: var(--green); }
+
+  .copy-btn {
+    background: none; border: none; color: var(--accent); cursor: pointer;
+    font-size: 0.8rem; padding: 0; text-decoration: underline;
+  }
+  .copy-btn:hover { color: var(--accent-hover); }
+
+  .output-section { display: none; }
+  .output-section.visible { display: block; }
+
+  .separator { border: none; border-top: 1px solid var(--border); margin: 0.75rem 0; }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 0; margin-top: 1.5rem; margin-bottom: -1px; position: relative; z-index: 1;
+  }
+  .tab {
+    padding: 0.6rem 1.25rem; font-size: 0.95rem; font-weight: 600;
+    border: 1px solid var(--border); border-bottom: none;
+    border-radius: 0.75rem 0.75rem 0 0;
+    background: var(--tab-bg); color: var(--text-muted); cursor: pointer;
+  }
+  .tab:hover { background: var(--tab-hover); }
+  .tab.active { background: var(--bg-card); color: var(--text-heading); border-bottom: 1px solid var(--bg-card); }
+  .tab-panel { display: none; }
+  .tab-panel.active {
+    display: block;
+    border: 1px solid var(--border); border-radius: 0 0.75rem 0.75rem 0.75rem;
+    background: var(--bg-card); padding: 1.25rem;
+    box-shadow: 0 4px 12px var(--shadow);
+  }
+  #panel-batch.active { border-radius: 0.75rem 0 0.75rem 0.75rem; }
+
+  /* Folder picker */
+  .folder-row {
+    display: flex; gap: 0.5rem; align-items: center; margin: 0.4rem 0; flex-wrap: wrap;
+  }
+  .folder-path {
+    font-size: 0.85rem; color: var(--green); background: var(--green-light);
+    padding: 0.25rem 0.6rem; border-radius: 0.4rem; border: 1px solid var(--green-border);
+    max-width: 30rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .folder-path.inactive { color: var(--text-muted); background: var(--tab-bg); border-color: var(--border); }
+
+  /* Watch mode indicator */
+  .watch-indicator {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    font-size: 0.8rem; padding: 0.2rem 0.6rem; border-radius: 1rem;
+    background: #fef3c7; color: #92400e; border: 1px solid #fcd34d;
+  }
+  .watch-indicator.active { background: #dcfce7; color: #166534; border-color: #86efac; }
+  .watch-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #f59e0b;
+  }
+  .watch-indicator.active .watch-dot {
+    background: #22c55e;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .settings-saved {
+    font-size: 0.75rem; color: var(--green); opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .settings-saved.show { opacity: 1; }
+
+  /* File badge */
+  .file-badge {
+    font-size: 0.8rem; padding: 0.15rem 0.55rem; border-radius: 1rem;
+    background: var(--accent); color: #fff; cursor: default; white-space: nowrap;
+  }
+  .file-badge.watching { background: var(--green); }
+
+  /* Top-right buttons */
+  .top-buttons {
+    position: fixed; top: 1rem; right: 1.5rem; z-index: 100;
+    display: flex; gap: 0.5rem;
+  }
+  .top-btn {
+    width: 2.2rem; height: 2.2rem; border-radius: 50%;
+    border: 1px solid var(--border); background: var(--bg-card);
+    cursor: pointer; font-size: 1.1rem; display: flex;
+    align-items: center; justify-content: center; padding: 0;
+    color: var(--text);
+  }
+  .top-btn:hover { background: var(--btn-hover); }
+
+  /* Info modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.5); align-items: center; justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 1rem; padding: 2rem; max-width: 520px; width: 90%;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.2); position: relative;
+  }
+  .modal h2 { margin: 0 0 1rem; font-size: 1.2rem; }
+  .modal p { margin: 0.5rem 0; font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; }
+  .modal ul { margin: 0.5rem 0; padding-left: 1.2rem; font-size: 0.85rem; color: var(--text-muted); line-height: 1.8; }
+  .modal .dev { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--text-dim); }
+  .modal-close {
+    position: absolute; top: 0.75rem; right: 0.75rem;
+    width: 1.8rem; height: 1.8rem; border-radius: 50%;
+    border: none; background: var(--tab-bg); color: var(--text-muted);
+    cursor: pointer; font-size: 0.9rem; display: flex;
+    align-items: center; justify-content: center;
+  }
+  .modal-close:hover { background: var(--border); }
+</style>
+</head>
+<body>
+
+<div class="top-buttons">
+  <button class="top-btn" id="info-btn" title="Info">i</button>
+  <button class="top-btn" id="theme-toggle" title="Toggle dark mode"></button>
+</div>
+
+<div class="modal-overlay" id="info-modal">
+  <div class="modal">
+    <button class="modal-close" id="info-close">X</button>
+    <h2>MarbleAI Image to 3DGS Tool</h2>
+    <p>Convert images to 3D Gaussian Splat (PLY) files using the World Labs Marble API. Designed for designers who need a zero-install browser tool.</p>
+    <p><strong>Features:</strong></p>
+    <ul>
+      <li><strong>Single Image</strong> — Drag & drop images, generate 3D worlds, download PLY/SPZ</li>
+      <li><strong>Batch Folders</strong> — Watch an input folder, auto-process new images, save to output folder</li>
+      <li><strong>Model selection</strong> — Marble 0.1-mini (fast) or Marble 0.1-plus (high quality)</li>
+      <li><strong>Resolution</strong> — Full Res / 500K / 100K splat output</li>
+      <li><strong>Flexible outputs</strong> — PLY, SPZ, Thumbnail, Marble viewer URL</li>
+      <li><strong>Auto-save</strong> — Directly write to a local output folder (e.g. TouchDesigner input)</li>
+      <li><strong>Download All</strong> — Pack all results into a ZIP with links.csv</li>
+      <li><strong>Settings memory</strong> — All preferences saved locally</li>
+    </ul>
+    <div class="dev">
+      Developed by <strong>JimmyMg</strong><br>
+      Powered by World Labs Marble API &amp; spz-js
+    </div>
+  </div>
+</div>
+
+<h1>MarbleAI Image to 3DGS Tool</h1>
+
+<!-- API Key -->
+<div class="card">
+  <div class="card-row">
+    <label style="flex:1">
+      API Key:
+      <input id="api-key" type="password" placeholder="Paste your WLT API key" style="flex:1" />
+    </label>
+  </div>
+</div>
+
+<!-- Settings -->
+<h2>Settings <span class="settings-saved" id="settings-saved">Settings saved</span></h2>
+<div class="card">
+  <div class="card-row">
+    <label>Model:
+      <select id="model-select">
+        <option value="Marble 0.1-mini">Marble 0.1-mini (fast, ~30-45s)</option>
+        <option value="Marble 0.1-plus">Marble 0.1-plus (high quality, ~5min)</option>
+      </select>
+    </label>
+    <label>Resolution:
+      <select id="resolution-select">
+        <option value="full_res">Full Res</option>
+        <option value="500k">500K</option>
+        <option value="100k">100K</option>
+      </select>
+    </label>
+    <label>
+      <input id="auto-enhance" type="checkbox" checked />
+      Auto-enhance
+    </label>
+  </div>
+  <hr class="separator" />
+  <div class="card-row">
+    <span style="font-size:0.9rem; font-weight:600;">Outputs:</span>
+    <label><input type="checkbox" class="output-check" value="ply" checked /> PLY</label>
+    <label><input type="checkbox" class="output-check" value="marble" checked /> Marble URL</label>
+    <label><input type="checkbox" class="output-check" value="spz" /> SPZ</label>
+    <label><input type="checkbox" class="output-check" value="thumbnail" /> Thumbnail</label>
+  </div>
+</div>
+
+<!-- Mode Tabs -->
+<div class="tabs">
+  <div class="tab active" data-tab="single">Single Image</div>
+  <div class="tab" data-tab="batch">Batch Folders</div>
+</div>
+
+<!-- Single Image Panel -->
+<div class="tab-panel active" id="panel-single">
+  <div class="dropzone" id="dropzone">
+    <div>Drag & drop images here, or click to select</div>
+    <div style="font-size:0.8rem; margin-top:0.3rem; color:var(--text-dim);">PNG / JPG / WEBP</div>
+    <input type="file" id="file-input" accept=".png,.jpg,.jpeg,.webp" multiple />
+  </div>
+  <div class="thumb-grid" id="thumb-grid"></div>
+  <div class="thumb-summary" id="thumb-summary" style="display:none">
+    <span id="file-count"></span>
+    <button class="btn-sm" id="clear-all">Clear All</button>
+  </div>
+  <div style="margin-top:1rem">
+    <button class="btn-primary" id="start-batch">Start</button>
+  </div>
+</div>
+
+<!-- Batch Folders Panel -->
+<div class="tab-panel" id="panel-batch">
+  <div class="folder-row">
+    <span style="font-size:0.9rem; font-weight:600; min-width:5rem;">Input:</span>
+    <button class="btn-sm" id="pick-watch-folder">Select Folder</button>
+    <span class="folder-path inactive" id="watch-folder-name">Not set</span>
+    <span class="file-badge" id="input-file-badge" style="display:none" title=""></span>
+  </div>
+  <hr class="separator" />
+  <div class="folder-row">
+    <span style="font-size:0.9rem; font-weight:600; min-width:5rem;">Output:</span>
+    <button class="btn-sm" id="pick-output-folder">Select Folder</button>
+    <span class="folder-path inactive" id="output-folder-name">Not set</span>
+  </div>
+  <hr class="separator" />
+  <div class="card-row">
+    <span style="font-size:0.9rem; font-weight:600;">Mode:</span>
+    <select id="batch-mode">
+      <option value="existing" selected>Process existing files</option>
+      <option value="watch">Watch for new files only</option>
+      <option value="both">Process existing + watch for new</option>
+    </select>
+  </div>
+  <div style="margin-top:1rem">
+    <button class="btn-primary" id="start-batch-folder">Start</button>
+    <button class="btn-primary" id="stop-batch-folder" style="display:none">Stop Watching</button>
+  </div>
+  <div class="folder-row" id="watch-status-row" style="display:none">
+    <div class="watch-indicator" id="watch-indicator">
+      <div class="watch-dot"></div>
+      <span id="watch-status-text">Watching...</span>
+    </div>
+    <span style="font-size:0.8rem; color:var(--text-muted);" id="watch-info"></span>
+  </div>
+</div>
+
+<!-- Results -->
+<div class="output-section" id="results-section">
+  <h2>Results</h2>
+  <div class="card" id="results-container"></div>
+  <div style="margin-top:0.75rem">
+    <button class="btn-primary btn-green" id="download-all" disabled>Download All (ZIP)</button>
+  </div>
+</div>
+
+<script type="module">
+  const API_BASE = "https://api.worldlabs.ai/marble/v1";
+  const STORAGE_KEY = "wl-batch-settings";
+  const IMAGE_EXTS = ["png", "jpg", "jpeg", "webp"];
+
+  // --- DOM refs ---
+  const apiKeyInput = document.getElementById("api-key");
+  const modelSelect = document.getElementById("model-select");
+  const resolutionSelect = document.getElementById("resolution-select");
+  const autoEnhanceCheck = document.getElementById("auto-enhance");
+  const outputChecks = document.querySelectorAll(".output-check");
+  const settingsSavedEl = document.getElementById("settings-saved");
+  const dropzone = document.getElementById("dropzone");
+  const fileInput = document.getElementById("file-input");
+  const thumbGrid = document.getElementById("thumb-grid");
+  const thumbSummary = document.getElementById("thumb-summary");
+  const fileCountEl = document.getElementById("file-count");
+  const clearAllBtn = document.getElementById("clear-all");
+  const startBatchBtn = document.getElementById("start-batch");
+  const resultsSection = document.getElementById("results-section");
+  const resultsContainer = document.getElementById("results-container");
+  const downloadAllBtn = document.getElementById("download-all");
+  const pickOutputBtn = document.getElementById("pick-output-folder");
+  const outputFolderName = document.getElementById("output-folder-name");
+  const pickWatchBtn = document.getElementById("pick-watch-folder");
+  const watchFolderName = document.getElementById("watch-folder-name");
+  const batchModeSelect = document.getElementById("batch-mode");
+  const startBatchFolderBtn = document.getElementById("start-batch-folder");
+  const stopBatchFolderBtn = document.getElementById("stop-batch-folder");
+  const watchStatusRow = document.getElementById("watch-status-row");
+  const watchIndicator = document.getElementById("watch-indicator");
+  const watchStatusText = document.getElementById("watch-status-text");
+  const watchInfo = document.getElementById("watch-info");
+
+  // --- Info modal ---
+  const infoModal = document.getElementById("info-modal");
+  document.getElementById("info-btn").onclick = () => infoModal.classList.add("active");
+  document.getElementById("info-close").onclick = () => infoModal.classList.remove("active");
+  infoModal.onclick = (e) => { if (e.target === infoModal) infoModal.classList.remove("active"); };
+
+  // --- Theme toggle ---
+  const themeBtn = document.getElementById("theme-toggle");
+  function applyTheme(dark) {
+    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+    themeBtn.textContent = dark ? "\u2600" : "\u263E";
+    try { localStorage.setItem("wl-theme", dark ? "dark" : "light"); } catch {}
+  }
+  const savedTheme = localStorage.getItem("wl-theme");
+  const prefersDark = savedTheme ? savedTheme === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  applyTheme(prefersDark);
+  themeBtn.onclick = () => applyTheme(document.documentElement.getAttribute("data-theme") !== "dark");
+
+  // --- Tab switching ---
+  document.querySelectorAll(".tab").forEach(tab => {
+    tab.onclick = () => {
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+      tab.classList.add("active");
+      document.getElementById(`panel-${tab.dataset.tab}`).classList.add("active");
+    };
+  });
+
+  // --- State ---
+  let selectedFiles = [];
+  let results = [];
+  let isRunning = false;
+  let outputDirHandle = null;
+  let watchDirHandle = null;
+  let watchKnownFiles = new Set();   // files to skip during watch scan
+  let processedFiles = new Set();     // files actually processed (shown in history)
+
+  // =============================================
+  // localStorage settings
+  // =============================================
+  function saveSettings() {
+    const data = {
+      apiKey: apiKeyInput.value,
+      model: modelSelect.value,
+      resolution: resolutionSelect.value,
+      autoEnhance: autoEnhanceCheck.checked,
+      batchMode: batchModeSelect.value,
+      outputs: {},
+    };
+    outputChecks.forEach(c => data.outputs[c.value] = c.checked);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+    // Flash "saved" indicator
+    settingsSavedEl.classList.add("show");
+    setTimeout(() => settingsSavedEl.classList.remove("show"), 1500);
+  }
+
+  function loadSettings() {
+    try {
+      const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (!data) return;
+      if (data.apiKey) apiKeyInput.value = data.apiKey;
+      if (data.model) modelSelect.value = data.model;
+      if (data.resolution) resolutionSelect.value = data.resolution;
+      if (data.autoEnhance !== undefined) autoEnhanceCheck.checked = data.autoEnhance;
+      if (data.batchMode) batchModeSelect.value = data.batchMode;
+      if (data.outputs) {
+        outputChecks.forEach(c => {
+          if (data.outputs[c.value] !== undefined) c.checked = data.outputs[c.value];
+        });
+      }
+    } catch {}
+  }
+
+  // Auto-save on any settings change
+  apiKeyInput.oninput = saveSettings;
+  modelSelect.onchange = saveSettings;
+  resolutionSelect.onchange = saveSettings;
+  autoEnhanceCheck.onchange = saveSettings;
+  batchModeSelect.onchange = saveSettings;
+  outputChecks.forEach(c => c.onchange = saveSettings);
+
+  // Load on startup
+  loadSettings();
+
+  // =============================================
+  // SPZ / JSZip lazy load
+  // =============================================
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error(`Failed to load ${src}`));
+      document.head.appendChild(s);
+    });
+  }
+
+  let spzModule = null;
+  async function getSpzModule() {
+    if (!spzModule) {
+      try {
+        spzModule = await import("https://cdn.jsdelivr.net/npm/spz-js/+esm");
+      } catch {
+        throw new Error("Failed to load spz-js. If opened via file://, try serving from localhost instead.");
+      }
+    }
+    return spzModule;
+  }
+
+  let JSZip = null;
+  async function getJSZip() {
+    if (!JSZip) {
+      // jszip has a UMD build, use script tag (no CORS issues from file://)
+      await loadScript("https://cdn.jsdelivr.net/npm/jszip/dist/jszip.min.js");
+      JSZip = window.JSZip;
+    }
+    return JSZip;
+  }
+
+  // =============================================
+  // Helpers
+  // =============================================
+  function getOutputs() {
+    const out = {};
+    outputChecks.forEach(c => out[c.value] = c.checked);
+    return out;
+  }
+
+  function downloadBlob(blob, filename) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  async function fileToBase64(file) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let binary = "";
+    const chunk = 8192;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+    }
+    return btoa(binary);
+  }
+
+  // =============================================
+  // API helpers
+  // =============================================
+  async function apiFetch(path, options = {}) {
+    const apiKey = apiKeyInput.value.trim();
+    if (!apiKey) throw new Error("Enter your API key first.");
+    const resp = await fetch(`${API_BASE}/${path}`, {
+      ...options,
+      headers: { "WLT-Api-Key": apiKey, "Content-Type": "application/json", ...options.headers },
+    });
+    const body = await resp.json();
+    if (!resp.ok) throw new Error(`${path}: ${resp.status} ${JSON.stringify(body)}`);
+    return body;
+  }
+
+  async function apiGenerateWorld(imageBase64, model, autoEnhance) {
+    const op = await apiFetch("worlds:generate", {
+      method: "POST",
+      body: JSON.stringify({
+        world_prompt: {
+          type: "image",
+          text_prompt: null,
+          disable_recaption: !autoEnhance,
+          image_prompt: { source: "data_base64", data_base64: imageBase64 },
+        },
+        model,
+      }),
+    });
+    return op.operation_id;
+  }
+
+  async function pollOperation(opId, onProgress) {
+    while (true) {
+      const op = await apiFetch(`operations/${opId}`);
+      if (op.done) return op;
+      if (onProgress) onProgress(op);
+      await new Promise(r => setTimeout(r, 5000));
+    }
+  }
+
+  async function getWorld(worldId) {
+    return await apiFetch(`worlds/${worldId}`);
+  }
+
+  // =============================================
+  // Output folder — File System Access API
+  // =============================================
+  pickOutputBtn.onclick = async () => {
+    try {
+      outputDirHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+      outputFolderName.textContent = outputDirHandle.name;
+      outputFolderName.classList.remove("inactive");
+    } catch {}
+  };
+
+  async function saveToOutputFolder(filename, data) {
+    if (!outputDirHandle) return false;
+    try {
+      const fileHandle = await outputDirHandle.getFileHandle(filename, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(data);
+      await writable.close();
+      return true;
+    } catch (err) {
+      console.error("Failed to save to output folder:", err);
+      return false;
+    }
+  }
+
+  // =============================================
+  // Batch Folders
+  // =============================================
+  const inputFileBadge = document.getElementById("input-file-badge");
+  let existingFileNames = []; // names of images currently in input folder
+
+  pickWatchBtn.onclick = async () => {
+    try {
+      watchDirHandle = await window.showDirectoryPicker({ mode: "read" });
+      watchFolderName.textContent = watchDirHandle.name;
+      watchFolderName.classList.remove("inactive");
+      await scanExistingFiles();
+      updateBadge();
+    } catch {}
+  };
+
+  // Re-scan and update badge when mode changes
+  batchModeSelect.addEventListener("change", updateBadge);
+
+  function isImageFile(name) {
+    const ext = name.split(".").pop().toLowerCase();
+    return IMAGE_EXTS.includes(ext);
+  }
+
+  async function scanExistingFiles() {
+    existingFileNames = [];
+    if (!watchDirHandle) return;
+    for await (const entry of watchDirHandle.values()) {
+      if (entry.kind === "file" && isImageFile(entry.name)) {
+        existingFileNames.push(entry.name);
+      }
+    }
+  }
+
+  function updateBadge() {
+    if (!watchDirHandle || existingFileNames.length === 0) {
+      inputFileBadge.style.display = "none";
+      return;
+    }
+    const mode = batchModeSelect.value;
+    const count = existingFileNames.length;
+    const tooltip = existingFileNames.join("\n");
+
+    if (mode === "existing") {
+      inputFileBadge.textContent = `${count} file${count > 1 ? "s" : ""} to process`;
+      inputFileBadge.className = "file-badge";
+    } else if (mode === "watch") {
+      inputFileBadge.textContent = `${count} file${count > 1 ? "s" : ""} skipped`;
+      inputFileBadge.className = "file-badge watching";
+    } else {
+      inputFileBadge.textContent = `${count} existing + watch new`;
+      inputFileBadge.className = "file-badge";
+    }
+    inputFileBadge.title = tooltip;
+    inputFileBadge.style.display = "";
+  }
+
+  async function getExistingFiles() {
+    const files = [];
+    if (!watchDirHandle) return files;
+    for await (const entry of watchDirHandle.values()) {
+      if (entry.kind === "file" && isImageFile(entry.name)) {
+        files.push({ name: entry.name, handle: entry });
+      }
+    }
+    return files;
+  }
+
+  startBatchFolderBtn.onclick = async () => {
+    if (!watchDirHandle) { alert("Select an input folder first."); return; }
+    if (isRunning) return;
+
+    const mode = batchModeSelect.value;
+
+    // Process existing files
+    if (mode === "existing" || mode === "both") {
+      const existing = await getExistingFiles();
+      if (existing.length > 0) {
+        watchInfo.textContent = `Processing ${existing.length} existing file${existing.length > 1 ? "s" : ""}...`;
+        const files = [];
+        for (const entry of existing) {
+          files.push(await entry.handle.getFile());
+          markAsKnown(entry.name);
+        }
+        await processBatch(files);
+      } else {
+        watchInfo.textContent = "No images found in folder";
+      }
+    }
+
+    // Start watching for new files
+    if (mode === "watch" || mode === "both") {
+      // Mark existing files as known so we skip them in watch
+      if (mode === "watch") {
+        const existing = await getExistingFiles();
+        existing.forEach(e => markAsKnown(e.name));
+      }
+      startWatching();
+    }
+  };
+
+  stopBatchFolderBtn.onclick = () => {
+    stopWatching();
+  };
+
+  function markAsKnown(filename) {
+    watchKnownFiles.add(filename);
+  }
+
+  function addToHistory(filename) {
+    watchKnownFiles.add(filename);
+    processedFiles.add(filename);
+  }
+
+  let watchActive = false;
+  let scanCount = 0;
+
+  function startWatching() {
+    watchActive = true;
+    scanCount = 0;
+    watchStatusRow.style.display = "flex";
+    watchIndicator.classList.add("active");
+    watchStatusText.textContent = "Watching...";
+    watchInfo.textContent = `${watchKnownFiles.size} files tracked`;
+    startBatchFolderBtn.style.display = "none";
+    stopBatchFolderBtn.style.display = "";
+
+    scheduleNextScan();
+  }
+
+  function stopWatching() {
+    watchActive = false;
+    watchStatusRow.style.display = "none";
+    watchIndicator.classList.remove("active");
+    startBatchFolderBtn.style.display = "";
+    stopBatchFolderBtn.style.display = "none";
+  }
+
+  function scheduleNextScan() {
+    if (!watchActive) return;
+    setTimeout(() => scanWatchFolder(), 3000);
+  }
+
+  async function scanWatchFolder() {
+    if (!watchActive || !watchDirHandle) return;
+    scanCount++;
+    try {
+      const newFiles = [];
+      for await (const entry of watchDirHandle.values()) {
+        if (entry.kind === "file" && isImageFile(entry.name) && !watchKnownFiles.has(entry.name)) {
+          const file = await entry.getFile();
+          newFiles.push(file);
+          markAsKnown(entry.name);
+        }
+      }
+      if (newFiles.length > 0) {
+        watchInfo.textContent = `Found ${newFiles.length} new image${newFiles.length > 1 ? "s" : ""}`;
+        watchStatusText.textContent = "Processing...";
+        await processBatch(newFiles);
+        watchStatusText.textContent = "Watching...";
+      } else {
+        watchInfo.textContent = `Scan #${scanCount} — no new files`;
+      }
+    } catch (err) {
+      console.error("Watch scan error:", err);
+      watchInfo.textContent = `Scan error: ${err.message}`;
+    }
+    scheduleNextScan();
+  }
+
+  // =============================================
+  // File handling (manual mode)
+  // =============================================
+  function addFiles(files) {
+    for (const file of files) {
+      if (!file.type.match(/^image\/(png|jpe?g|webp)$/)) continue;
+      if (selectedFiles.some(f => f.file.name === file.name && f.file.size === file.size)) continue;
+      selectedFiles.push({ file, previewUrl: URL.createObjectURL(file) });
+    }
+    renderThumbs();
+  }
+
+  function removeFile(index) {
+    URL.revokeObjectURL(selectedFiles[index].previewUrl);
+    selectedFiles.splice(index, 1);
+    renderThumbs();
+  }
+
+  function clearFiles() {
+    selectedFiles.forEach(f => URL.revokeObjectURL(f.previewUrl));
+    selectedFiles = [];
+    renderThumbs();
+  }
+
+  function renderThumbs() {
+    thumbGrid.innerHTML = "";
+    selectedFiles.forEach((f, i) => {
+      const div = document.createElement("div");
+      div.className = "thumb-item";
+      div.innerHTML = `<img src="${f.previewUrl}" title="${f.file.name}" /><button class="remove">X</button>`;
+      div.querySelector(".remove").onclick = () => removeFile(i);
+      thumbGrid.appendChild(div);
+    });
+    if (selectedFiles.length > 0) {
+      thumbSummary.style.display = "flex";
+      fileCountEl.textContent = `${selectedFiles.length} image${selectedFiles.length > 1 ? "s" : ""} selected`;
+    } else {
+      thumbSummary.style.display = "none";
+    }
+  }
+
+  dropzone.onclick = () => fileInput.click();
+  fileInput.onchange = () => { addFiles(fileInput.files); fileInput.value = ""; };
+  dropzone.ondragover = e => { e.preventDefault(); dropzone.classList.add("dragover"); };
+  dropzone.ondragleave = () => dropzone.classList.remove("dragover");
+  dropzone.ondrop = e => { e.preventDefault(); dropzone.classList.remove("dragover"); addFiles(e.dataTransfer.files); };
+  clearAllBtn.onclick = clearFiles;
+
+  // =============================================
+  // Result UI
+  // =============================================
+  function createResultEl(name) {
+    const div = document.createElement("div");
+    div.className = "result-item";
+    div.innerHTML = `
+      <div class="result-header">
+        <span class="result-name"></span>
+        <div class="result-progress"><div class="result-progress-fill"></div></div>
+        <span class="result-status">Queued</span>
+      </div>
+      <div class="result-actions"></div>
+    `;
+    div.querySelector(".result-name").textContent = name;
+    return div;
+  }
+
+  function updateResultStatus(el, status, progress) {
+    const statusEl = el.querySelector(".result-status");
+    const fillEl = el.querySelector(".result-progress-fill");
+    statusEl.textContent = status;
+    if (status === "Done") {
+      statusEl.className = "result-status done";
+      fillEl.className = "result-progress-fill done";
+      fillEl.style.width = "100%";
+    } else if (status.startsWith("Error")) {
+      statusEl.className = "result-status error";
+      fillEl.className = "result-progress-fill error";
+      fillEl.style.width = "100%";
+    } else {
+      statusEl.className = "result-status";
+      fillEl.style.width = (progress || 0) + "%";
+    }
+  }
+
+  function addResultActions(el, result, outputs, resolution, savedToFolder) {
+    const actions = el.querySelector(".result-actions");
+    actions.innerHTML = "";
+    const world = result.world;
+
+    if (savedToFolder) {
+      const span = document.createElement("span");
+      span.className = "result-saved";
+      span.textContent = "Saved to output folder";
+      actions.appendChild(span);
+    }
+
+    if (outputs.ply && result.plyData) {
+      const btn = document.createElement("button");
+      btn.className = "btn-sm";
+      btn.textContent = "Download PLY";
+      btn.onclick = () => downloadBlob(new Blob([result.plyData]), `${result.name}_${resolution}.ply`);
+      actions.appendChild(btn);
+    }
+
+    if (outputs.spz && result.spzBuffer) {
+      const btn = document.createElement("button");
+      btn.className = "btn-sm";
+      btn.textContent = "Download SPZ";
+      btn.onclick = () => downloadBlob(new Blob([result.spzBuffer]), `${result.name}_${resolution}.spz`);
+      actions.appendChild(btn);
+    }
+
+    if (outputs.thumbnail && result.thumbnailBlob) {
+      const btn = document.createElement("button");
+      btn.className = "btn-sm";
+      btn.textContent = "Download Thumbnail";
+      btn.onclick = () => downloadBlob(result.thumbnailBlob, `${result.name}_thumbnail.jpg`);
+      actions.appendChild(btn);
+    }
+
+    if (outputs.marble && world) {
+      const a = document.createElement("a");
+      a.href = world.world_marble_url;
+      a.target = "_blank";
+      a.textContent = "Open in Marble";
+      actions.appendChild(a);
+
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "copy-btn";
+      copyBtn.textContent = "Copy URL";
+      copyBtn.onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(world.world_marble_url);
+        } catch {
+          // fallback for file:// protocol
+          const ta = document.createElement("textarea");
+          ta.value = world.world_marble_url;
+          ta.style.position = "fixed"; ta.style.opacity = "0";
+          document.body.appendChild(ta); ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+        }
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => copyBtn.textContent = "Copy URL", 1500);
+      };
+      actions.appendChild(copyBtn);
+    }
+  }
+
+  // =============================================
+  // Core batch processing
+  // =============================================
+  async function processBatch(files) {
+    if (isRunning) return;
+    if (!apiKeyInput.value.trim()) { alert("Enter your API key."); return; }
+
+    const outputs = getOutputs();
+    if (!outputs.ply && !outputs.spz && !outputs.marble && !outputs.thumbnail) {
+      alert("Select at least one output type."); return;
+    }
+
+    isRunning = true;
+    startBatchBtn.disabled = true;
+    startBatchBtn.textContent = "Processing...";
+    downloadAllBtn.disabled = true;
+    resultsSection.classList.add("visible");
+
+    const model = modelSelect.value;
+    const resolution = resolutionSelect.value;
+    const autoEnhance = autoEnhanceCheck.checked;
+    const needSpzDownload = outputs.ply || outputs.spz;
+
+    // Process single file
+    async function processOne(file) {
+      const name = file.name.replace(/\.[^.]+$/, "");
+      const el = createResultEl(file.name);
+      resultsContainer.appendChild(el);
+      const result = { name, world: null, spzBuffer: null, plyData: null, thumbnailBlob: null };
+      results.push(result);
+
+      try {
+        updateResultStatus(el, "Uploading...", 10);
+        const base64 = await fileToBase64(file);
+        const opId = await apiGenerateWorld(base64, model, autoEnhance);
+
+        updateResultStatus(el, "Generating...", 25);
+        let pollCount = 0;
+        const op = await pollOperation(opId, (opData) => {
+          pollCount++;
+          const p = Math.min(75, 25 + pollCount * 3);
+          const desc = opData?.metadata?.progress?.description;
+          updateResultStatus(el, desc ? `Generating: ${desc}` : "Generating...", p);
+        });
+
+        updateResultStatus(el, "Fetching world...", 80);
+        const world = await getWorld(op.response.world_id);
+        result.world = world;
+
+        if (needSpzDownload) {
+          updateResultStatus(el, "Downloading SPZ...", 85);
+          const spzResp = await fetch(world.assets.splats.spz_urls[resolution]);
+          if (!spzResp.ok) throw new Error(`SPZ download failed: ${spzResp.status}`);
+          result.spzBuffer = await spzResp.arrayBuffer();
+        }
+
+        if (outputs.ply && result.spzBuffer) {
+          updateResultStatus(el, "Converting to PLY...", 90);
+          const { loadSpz, serializePly } = await getSpzModule();
+          result.plyData = serializePly(await loadSpz(result.spzBuffer));
+        }
+
+        if (outputs.thumbnail) {
+          updateResultStatus(el, "Downloading thumbnail...", 95);
+          const thumbResp = await fetch(world.assets.thumbnail_url);
+          if (thumbResp.ok) result.thumbnailBlob = await thumbResp.blob();
+        }
+
+        let savedToFolder = false;
+        if (outputDirHandle) {
+          updateResultStatus(el, "Saving...", 98);
+          if (outputs.ply && result.plyData)
+            await saveToOutputFolder(`${name}_${resolution}.ply`, result.plyData);
+          if (outputs.spz && result.spzBuffer)
+            await saveToOutputFolder(`${name}_${resolution}.spz`, result.spzBuffer);
+          if (outputs.thumbnail && result.thumbnailBlob)
+            await saveToOutputFolder(`${name}_thumbnail.jpg`, result.thumbnailBlob);
+          if (outputs.marble)
+            await saveToOutputFolder(`${name}_marble_url.txt`, world.world_marble_url);
+          savedToFolder = true;
+        }
+
+        updateResultStatus(el, "Done", 100);
+        addResultActions(el, result, outputs, resolution, savedToFolder);
+        addToHistory(file.name);
+
+      } catch (err) {
+        console.error(`[${name}]`, err);
+        updateResultStatus(el, `Error: ${err.message}`, 0);
+        result.error = err.message;
+      }
+    }
+
+    // Run all files in parallel (API handles concurrency server-side)
+    await Promise.all(files.map(f => processOne(f)));
+
+    startBatchBtn.disabled = false;
+    startBatchBtn.textContent = "Start";
+    isRunning = false;
+
+    if (results.some(r => r.world)) downloadAllBtn.disabled = false;
+  }
+
+  // Manual start
+  startBatchBtn.onclick = async () => {
+    if (isRunning || selectedFiles.length === 0) {
+      if (!isRunning && selectedFiles.length === 0) alert("Select at least one image.");
+      return;
+    }
+    const files = selectedFiles.map(f => f.file);
+    resultsContainer.innerHTML = "";
+    results = [];
+    await processBatch(files);
+  };
+
+  // =============================================
+  // Download All as ZIP
+  // =============================================
+  downloadAllBtn.onclick = async () => {
+    const outputs = getOutputs();
+    const resolution = resolutionSelect.value;
+    downloadAllBtn.disabled = true;
+    downloadAllBtn.textContent = "Packing ZIP...";
+
+    try {
+      const ZipClass = await getJSZip();
+      const zip = new ZipClass();
+      const csvRows = ["filename,marble_url,world_id"];
+
+      for (const r of results) {
+        if (!r.world) continue;
+        const folder = zip.folder(r.name);
+        if (outputs.ply && r.plyData) folder.file(`${r.name}_${resolution}.ply`, r.plyData);
+        if (outputs.spz && r.spzBuffer) folder.file(`${r.name}_${resolution}.spz`, r.spzBuffer);
+        if (outputs.thumbnail && r.thumbnailBlob) folder.file(`${r.name}_thumbnail.jpg`, r.thumbnailBlob);
+        if (outputs.marble) folder.file(`${r.name}_marble_url.txt`, r.world.world_marble_url);
+        csvRows.push(`"${r.name}","${r.world.world_marble_url}","${r.world.world_id}"`);
+      }
+
+      zip.file("links.csv", csvRows.join("\n"));
+      downloadBlob(await zip.generateAsync({ type: "blob" }), "worldlabs-batch-output.zip");
+
+    } catch (err) {
+      console.error(err);
+      alert("ZIP packing failed: " + err.message);
+    } finally {
+      downloadAllBtn.disabled = false;
+      downloadAllBtn.textContent = "Download All (ZIP)";
+    }
+  };
+</script>
+</body>
+</html>
